@@ -1,323 +1,433 @@
-//#include <iostream>
+/**
+ * \file ArbolAVL.tpp
+ * \brief Este archivo contiene la implementaci&oacute;n de los m&eacute;todos de la clase ArbolAVL.
+ * \author S&aacute;nchez Montoy, Jes&uacute;s Axel
+ * \author Portugal Arreola, Marian Bethsab&eacute;
+ */
 
 #include "Cola.hpp"
+#include <iostream>
 
-//***********************************************
-// CONSTRUCTORES
-//***********************************************
+using std::cout;
+using std::endl;
 
-template<typename T>
-ArbolBinBusq<T>::ArbolBinBusq() : numNodos(0), raiz(nullptr)
+//***********************************
+
+template <typename T>
+ArbolAVL<T>::ArbolAVL()
 {
-    //numNodos = 0;
-    //raiz = nullptr;
+    raiz = nullptr;
+    numNodos = 0;
 }
 
-//***********************************************
+//***********************************
 
-template<typename T>
-ArbolBinBusq<T>::~ArbolBinBusq()
+template <typename T>
+ArbolAVL<T>::~ArbolAVL()
 {
     Vaciar();
 }
 
-//***********************************************
+//***********************************
 
-template<typename T>
-ArbolBinBusq<T>::ArbolBinBusq(const ArbolBinBusq &arbol) : numNodos(0), raiz(nullptr)
+template <typename T>
+ArbolAVL<T>::ArbolAVL(const ArbolAVL& arbol)
 {
+    raiz = nullptr;
+    numNodos = 0;
     *this = arbol;
 }
 
-//***********************************************
+//***********************************
 
-template<typename T>
-ArbolBinBusq<T> & ArbolBinBusq<T>::operator=(const ArbolBinBusq &arbol)
+template <typename T>
+ArbolAVL<T>& ArbolAVL<T>::operator=(const ArbolAVL& arbol)
 {
-    if(this == &arbol) return *this;
-    Vaciar();
+    if (this == &arbol) return *this;
 
-    CopiarEnPreorden(arbol.raiz);
+    Vaciar();
+    copiarPorNiveles(arbol);
+
     return *this;
 }
 
-//***********************************************
-// METODOS PUBLICOS
-//***********************************************
+//***********************************
+// MÉTODOS PÚBLICOS
+//***********************************
 
-template<typename T>
-bool ArbolBinBusq<T>::Agregar(T valor)
+template <typename T>
+void ArbolAVL<T>::AgregarNodo(T valor)
 {
-    return Agregar(valor, raiz);
-}
+    bool seAgrego = false;
 
-//***********************************************
-
-template<typename T>
-void ArbolBinBusq<T>::Eliminar(T valor)
-{
-    Eliminar(valor,raiz);
-}
-
-//***********************************************
-
-template<typename T>
-bool ArbolBinBusq<T>::BuscarNodo(T valor) const
-{
-    Nodo *visitado = raiz;
-
-    while(visitado != nullptr){
-
-        if(valor == visitado->valor){
-            return true;
-        }else if(valor < visitado->valor){
-            visitado = visitado->hijoIzq;
-        }else{
-            visitado = visitado->hijoDer;
-        }
+    try {
+        raiz = agregarRecursivo(raiz, valor, seAgrego);
+        if (seAgrego) numNodos++;
+    } catch (const std::bad_alloc&){
+        throw ArbolAVLNoMemoria();
     }
-
-    return false;
 }
 
-//***********************************************
+//***********************************
 
-template<typename T>
-int ArbolBinBusq<T>::ObtenerNumNodos() const
+template <typename T>
+bool ArbolAVL<T>::EliminarNodo(T valor)
+{
+    bool seElimino = false;
+    raiz = eliminarRecursivo(raiz, valor, seElimino);
+    if (seElimino) numNodos--;
+    return seElimino;
+}
+
+//***********************************
+
+template <typename T>
+bool ArbolAVL<T>::BuscarNodo(T valor) const
+{
+    return buscarRecursivo(raiz, valor);
+}
+
+//***********************************
+
+template <typename T>
+int ArbolAVL<T>::ObtenerNumNodos() const
 {
     return numNodos;
 }
 
-//***********************************************
+//***********************************
 
-template<typename T>
-bool ArbolBinBusq<T>::EstaVacia() const
+template <typename T>
+void ArbolAVL<T>::Vaciar()
 {
-    return numNodos == 0;
+    vaciarRecursivo(raiz);
+    raiz = nullptr;
+    numNodos = 0;
 }
 
-//***********************************************
+//***********************************
 
-template<typename T>
-void ArbolBinBusq<T>::Vaciar()
+template <typename T>
+int ArbolAVL<T>::ObtenerAltura() const
 {
-    Podar(raiz);
+    return altura(raiz);
 }
 
-//***********************************************
+//***********************************
 
-template<typename T>
-void ArbolBinBusq<T>::ImprimirAsc() const
+template <typename T>
+void ArbolAVL<T>::ImprimirAscendente() const
 {
-    ImprimirInorden(raiz);
-    std::cout << "\b\b ";
+    if (raiz == nullptr){
+        cout << "El \240rbol est\240 vac\241o." << endl;
+        return;
+    }
+
+    inOrden(raiz);
+    cout << endl;
 }
 
-//***********************************************
+//***********************************
 
-template<typename T>
-void ArbolBinBusq<T>::ImprimirPorNiveles() const
+template <typename T>
+void ArbolAVL<T>::ImprimirDescendente() const
 {
-    if(EstaVacia()) return;
+    if (raiz == nullptr){
+        cout << "El \240rbol est\240 vac\241o." << endl;
+        return;
+    }
+    inOrdenInverso(raiz);
+    cout << endl;
+}
 
-    Cola<Nodo *> cola;
-    Nodo *aux;
+//***********************************
 
+template <typename T>
+void ArbolAVL<T>::ImprimirPorNiveles() const
+{
+    if (raiz == nullptr) {
+        cout << "El \240rbol est\240 vac\241o." << endl;
+        return;
+    }
+
+    Cola<Nodo*> cola;
     cola.Agregar(raiz);
 
-    while(!cola.EstaVacia()){
-
-        aux = cola.ObtenerCabeza();
+    while (!cola.EstaVacia()){
+        Nodo* actual = cola.ObtenerCabeza();
         cola.Eliminar();
 
-        std::cout << aux->valor << ", ";
-        if(aux->hijoIzq != nullptr) cola.Agregar(aux->hijoIzq);
-        if(aux->hijoDer != nullptr) cola.Agregar(aux->hijoDer);
+        cout << actual->valor << " ";
+
+        if (actual->hijoIzq != nullptr) cola.Agregar(actual->hijoIzq);
+        if (actual->hijoDer != nullptr) cola.Agregar(actual->hijoDer);
     }
-    std::cout << "\b\b ";
+    cout << endl;
 }
 
-//***********************************************
+//***********************************
+// MÉTODOS DE UTILERÍA
+//***********************************
 
-template<typename T>
-void ArbolBinBusq<T>::ImprimirComoArbol() const
+template <typename T>
+int ArbolAVL<T>::altura(Nodo* n) const
 {
-    if(EstaVacia()) return;
+    if (n == nullptr){
+        return 0;
+    }
 
-    Cola<Nodo *> cola;
-    Nodo *aux;
+    return n->altura;
+}
 
-    cola.Agregar(raiz);
-    cola.Agregar(nullptr); // para indicar el primer nivel
+//***********************************
 
-    std::cout << std::endl;
-    while(!cola.EstaVacia()){
-
-        aux = cola.ObtenerCabeza();
-        cola.Eliminar();
-
-        if(aux != nullptr){
-            std::cout << aux->valor << " ";
-
-            if(aux->hijoIzq != nullptr) cola.Agregar(aux->hijoIzq);
-            if(aux->hijoDer != nullptr) cola.Agregar(aux->hijoDer);
-        }else{
-            // Se debe de hacer salto de linea
-            std::cout << std::endl;
-
-            // Si la cola no está vacía, significa que se pone en la cola a los hijos del nivel anterior
-            // Entonces, se agrega un nuevo marcador para este nivel
-            if(!cola.EstaVacia()){
-                cola.Agregar(nullptr);
-            }
-        }
+template <typename T>
+int ArbolAVL<T>::maximo(int a, int b) const
+{
+    if (a > b) {
+        return a;
+    } else {
+        return b;
     }
 }
 
-//***********************************************
-// METODOS PRIVADOS
-//***********************************************
+//***********************************
 
-template<typename T>
-bool ArbolBinBusq<T>::Agregar(T valor, Nodo *& subRaiz)
+template <typename T>
+int ArbolAVL<T>::factorEquilibrio(Nodo* n) const
 {
-    if(subRaiz == nullptr){
-
-        try{
-            subRaiz = new Nodo(valor);
-            ++numNodos;
-            return true;
-        }catch(const std::bad_alloc&){
-            throw ArbolNoMemoria();
-        }
+    if (n == nullptr){
+        return 0;
     }
-    else if(valor == subRaiz->valor) return false; // no permitimos repetidos.
-    else if(valor < subRaiz->valor) return Agregar(valor, subRaiz->hijoIzq);
-    else return Agregar(valor, subRaiz->hijoDer);
+    return altura(n->hijoIzq) - altura(n->hijoDer);
 }
 
-//***********************************************
+//***********************************
+// ROTACIONES
+//***********************************
 
-template<typename T>
-void ArbolBinBusq<T>::Eliminar(T valor, Nodo *& subRaiz)
+template <typename T>
+typename ArbolAVL<T>::Nodo* ArbolAVL<T>::rotSimpleDer(Nodo* n)
 {
-    if(subRaiz == nullptr) return;
-    else if(valor == subRaiz->valor){
+    Nodo* nIzq = n->hijoIzq;
+    Nodo* centro = nIzq->hijoDer;
 
-        if(subRaiz->hijoIzq != nullptr && subRaiz->hijoDer != nullptr){
-            Nodo *& dirMayorMenores = BuscarDirMayor(subRaiz->hijoIzq);
-            subRaiz->valor = dirMayorMenores->valor;
-            Eliminar(dirMayorMenores->valor, dirMayorMenores);
+    nIzq->hijoDer = n;
+    n->hijoIzq = centro;
 
-        }else{
+    n->altura = maximo(altura(n->hijoIzq), altura(n->hijoDer)) + 1;
+    nIzq->altura = maximo(altura(nIzq->hijoIzq), altura(nIzq->hijoDer)) + 1;
 
-            Nodo *porBorrar = subRaiz;
-            if(subRaiz->hijoIzq == nullptr && subRaiz->hijoDer == nullptr){
-                subRaiz = nullptr;
-            }else if(subRaiz->hijoIzq != nullptr && subRaiz->hijoDer == nullptr){
-                subRaiz = subRaiz->hijoIzq;
+    return nIzq;
+}
+
+//***********************************
+
+template <typename T>
+typename ArbolAVL<T>::Nodo* ArbolAVL<T>::rotSimpleIzq(Nodo* n)
+{
+    Nodo* nDer = n->hijoDer;
+    Nodo* centro = nDer->hijoIzq;
+
+    nDer->hijoIzq = n;
+    n->hijoDer = centro;
+
+    n->altura = maximo(altura(n->hijoIzq), altura(n->hijoDer)) + 1;
+    nDer->altura = maximo(altura(nDer->hijoIzq), altura(nDer->hijoDer)) + 1;
+
+    return nDer;
+}
+
+//***********************************
+
+template <typename T>
+typename ArbolAVL<T>::Nodo* ArbolAVL<T>::rotDobleDer(Nodo* n)
+{
+    n->hijoIzq = rotSimpleIzq(n->hijoIzq);
+    return rotSimpleDer(n);
+}
+
+//***********************************
+
+template <typename T>
+typename ArbolAVL<T>::Nodo* ArbolAVL<T>::rotDobleIzq(Nodo* n)
+{
+    n->hijoDer = rotSimpleDer(n->hijoDer);
+    return rotSimpleIzq(n);
+}
+
+//***********************************
+// MÉTODOS RECURSIVOS
+//***********************************
+
+template <typename T>
+typename ArbolAVL<T>::Nodo* ArbolAVL<T>::agregarRecursivo(Nodo* subArbol, T valor, bool& seAgrego)
+{
+    if (subArbol == nullptr){
+        seAgrego = true;
+        return new Nodo(valor);
+    }
+
+    if (valor < subArbol->valor){
+        subArbol->hijoIzq = agregarRecursivo(subArbol->hijoIzq, valor, seAgrego);
+    }else if (valor > subArbol->valor){
+        subArbol->hijoDer = agregarRecursivo(subArbol->hijoDer, valor, seAgrego);
+    }else{
+        return subArbol; // No se permiten repetidos
+    }
+
+    subArbol->altura = 1 + maximo(altura(subArbol->hijoIzq), altura(subArbol->hijoDer));
+    int balance = factorEquilibrio(subArbol);
+
+    // Balanceo
+    if (balance > 1 && valor < subArbol->hijoIzq->valor) return rotSimpleDer(subArbol);
+    if (balance < -1 && valor > subArbol->hijoDer->valor) return rotSimpleIzq(subArbol);
+    if (balance > 1 && valor > subArbol->hijoIzq->valor) return rotDobleDer(subArbol);
+    if (balance < -1 && valor < subArbol->hijoDer->valor) return rotDobleIzq(subArbol);
+
+    return subArbol;
+}
+
+//***********************************
+
+template <typename T>
+typename ArbolAVL<T>::Nodo* ArbolAVL<T>::nodoMinimo(Nodo* n) const
+{
+    Nodo* actual = n;
+    while (actual->hijoIzq != nullptr){
+        actual = actual->hijoIzq;
+    }
+    return actual;
+}
+
+//***********************************
+
+template <typename T>
+typename ArbolAVL<T>::Nodo* ArbolAVL<T>::eliminarRecursivo(Nodo* subArbol, T valor, bool& seElimino)
+{
+    if (subArbol == nullptr) return subArbol;
+
+    if (valor < subArbol->valor){
+        subArbol->hijoIzq = eliminarRecursivo(subArbol->hijoIzq, valor, seElimino);
+    }else if (valor > subArbol->valor){
+        subArbol->hijoDer = eliminarRecursivo(subArbol->hijoDer, valor, seElimino);
+    }else{
+        seElimino = true;
+
+        if ((subArbol->hijoIzq == nullptr) || (subArbol->hijoDer == nullptr)){
+            Nodo* temp = subArbol->hijoIzq ? subArbol->hijoIzq : subArbol->hijoDer;
+
+            if (temp == nullptr){
+                temp = subArbol;
+                subArbol = nullptr;
             }else{
-                subRaiz = subRaiz->hijoDer;
+                *subArbol = *temp;
             }
-
-            delete porBorrar;
-            --numNodos;
-            return;
-
+            delete temp;
+        }else{
+            Nodo* temp = nodoMinimo(subArbol->hijoDer);
+            subArbol->valor = temp->valor;
+            subArbol->hijoDer = eliminarRecursivo(subArbol->hijoDer, temp->valor, seElimino);
         }
-
-    }else if(valor < subRaiz->valor) Eliminar(valor, subRaiz->hijoIzq);
-    else Eliminar(valor, subRaiz->hijoDer);
-}
-
-
-//***********************************************
-
-template<typename T>
-typename ArbolBinBusq<T>::Nodo*& ArbolBinBusq<T>::BuscarDirMayor(Nodo *& subRaiz)
-{
-    // Vamos todo hacia la derecha hasta encontrar el nodo que no tiene hijo derecho
-    if(subRaiz->hijoDer == nullptr){
-        return subRaiz;
-    }
-    return BuscarDirMayor(subRaiz->hijoDer);
-}
-
-//***********************************************
-
-template<typename T>
-void ArbolBinBusq<T>::ImprimirInorden(Nodo *subRaiz) const
-{
-    if(subRaiz != nullptr){
-        ImprimirInorden(subRaiz->hijoIzq);
-        std::cout << subRaiz->valor << ", ";
-        ImprimirInorden(subRaiz->hijoDer);
     }
 
+    if (subArbol == nullptr) return subArbol;
+
+    subArbol->altura = 1 + maximo(altura(subArbol->hijoIzq), altura(subArbol->hijoDer));
+    int balance = factorEquilibrio(subArbol);
+
+    if (balance > 1 && factorEquilibrio(subArbol->hijoIzq) >= 0) return rotSimpleDer(subArbol);
+    if (balance > 1 && factorEquilibrio(subArbol->hijoIzq) < 0) return rotDobleDer(subArbol);
+    if (balance < -1 && factorEquilibrio(subArbol->hijoDer) <= 0) return rotSimpleIzq(subArbol);
+    if (balance < -1 && factorEquilibrio(subArbol->hijoDer) > 0) return rotDobleIzq(subArbol);
+
+    return subArbol;
 }
 
-//***********************************************
+//***********************************
 
-template<typename T>
-void ArbolBinBusq<T>::Podar(Nodo *& subRaiz)
+template <typename T>
+void ArbolAVL<T>::vaciarRecursivo(Nodo* subArbol)
 {
-    // Postorden: izq, derecha, luego subraiz.
-    if(subRaiz != nullptr){
-        Podar(subRaiz->hijoIzq);
-        Podar(subRaiz->hijoDer);
-
-        delete subRaiz;
-        --numNodos;
-
-        subRaiz = nullptr;
-
+    if (subArbol != nullptr){
+        vaciarRecursivo(subArbol->hijoIzq);
+        vaciarRecursivo(subArbol->hijoDer);
+        delete subArbol;
     }
 }
 
-//***********************************************
+//***********************************
 
-template<typename T>
-void ArbolBinBusq<T>::CopiarEnPreorden(Nodo* subRaizOrigen)
+template <typename T>
+bool ArbolAVL<T>::buscarRecursivo(Nodo* subArbol, T valor) const
 {
-    if(subRaizOrigen != nullptr){
+    if (subArbol == nullptr) return false;
 
-        this->Agregar(subRaizOrigen->valor); // Se agrega el valor actual
-
-        CopiarEnPreorden(subRaizOrigen->hijoIzq); // vamos pa la izquierda
-        CopiarEnPreorden(subRaizOrigen->hijoDer); // vamos pa la derecha
+    if (valor == subArbol->valor){
+        return true;
+    }else if (valor < subArbol->valor){
+        return buscarRecursivo(subArbol->hijoIzq, valor);
+    }else{
+        return buscarRecursivo(subArbol->hijoDer, valor);
     }
 }
 
-//***********************************************
-// CONSTRUCTOR DE NODO
-//***********************************************
+//***********************************
 
-template<typename T>
-ArbolBinBusq<T>::Nodo::Nodo(T v, Nodo *hIzq /*= nullptr*/, Nodo *hDer /*= nullptr*/) :
-    valor(v), hijoIzq(hIzq), hijoDer(hDer) {}
+template <typename T>
+void ArbolAVL<T>::inOrden(Nodo* subArbol) const
+{
+    if (subArbol != nullptr){
+        inOrden(subArbol->hijoIzq);
+        cout << subArbol->valor << " ";
+        inOrden(subArbol->hijoDer);
+    }
+}
+
+//***********************************
+
+template <typename T>
+void ArbolAVL<T>::inOrdenInverso(Nodo* subArbol) const
+{
+    if (subArbol != nullptr){
+        inOrdenInverso(subArbol->hijoDer);
+        cout << subArbol->valor << " ";
+        inOrdenInverso(subArbol->hijoIzq);
+    }
+}
+
+//***********************************
+
+template <typename T>
+void ArbolAVL<T>::copiarPorNiveles(const ArbolAVL& otroArbol)
+{
+    if (otroArbol.raiz == nullptr) return;
+
+    Cola<Nodo*> cola;
+    cola.Agregar(otroArbol.raiz);
+
+    while (!cola.EstaVacia()){
+        Nodo* actual = cola.ObtenerCabeza();
+        cola.Eliminar();
+
+        AgregarNodo(actual->valor);
+
+        if (actual->hijoIzq != nullptr) cola.Agregar(actual->hijoIzq);
+        if (actual->hijoDer != nullptr) cola.Agregar(actual->hijoDer);
+    }
+}
 
 //***********************************
 // EXCEPCIONES
 //***********************************
 
-template<typename T>
-ArbolBinBusq<T>::ArbolNoMemoria::ArbolNoMemoria() throw() {}
+template <typename T>
+ArbolAVL<T>::ArbolAVLNoMemoria::ArbolAVLNoMemoria() throw() {}
 
 //***********************************
 
-template<typename T>
-const char *ArbolBinBusq<T>::ArbolNoMemoria::what() const throw()
+template <typename T>
+const char *ArbolAVL<T>::ArbolAVLNoMemoria::what() const throw()
 {
     return "No hay memoria disponible.";
-}
-
-//**********************************
-// Flujos sobrecargados de entrada y salida
-//**********************************
-
-template<typename T>
-std::ostream& operator<<(std::ostream& salida, const ArbolBinBusq<T>& arbol)
-{
-    arbol.ImprimirComoArbol();
-    return salida;
 }

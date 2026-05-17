@@ -1,71 +1,80 @@
-#ifndef ARBOLBINBUSQ_HPP
-#define ARBOLBINBUSQ_HPP
+#ifndef ARBOLAVL_HPP_INCLUDED
+#define ARBOLAVL_HPP_INCLUDED
 
 #include <iostream>
-#include <exception>
 
-template<typename T> class ArbolBinBusq;
-template<typename T> std::ostream& operator<<(std::ostream& salida, const ArbolBinBusq<T>& arbol);
-
-
-template<typename T>
-class ArbolBinBusq{
-    friend std::ostream& operator<< <>(std::ostream& salida, const ArbolBinBusq<T>& arbol);
+template <typename T>
+class ArbolAVL {
 public:
 
-    // Constructores
-    ArbolBinBusq();
-    ~ArbolBinBusq();
-    ArbolBinBusq(const ArbolBinBusq& arbol);
-    ArbolBinBusq &operator=(const ArbolBinBusq &a);
+    //metodos para el buen funcionamiento de la clase
+    ArbolAVL();
+    ~ArbolAVL();
+    ArbolAVL(const ArbolAVL& arbol);
+    ArbolAVL& operator=(const ArbolAVL& arbol);
 
-    // Métodos
-    bool Agregar(T valor);
-    void Eliminar(T valor);
-
+    void AgregarNodo(T valor);
+    bool EliminarNodo(T valor);
     bool BuscarNodo(T valor) const;
-
     int ObtenerNumNodos() const;
-
-    bool EstaVacia() const;
     void Vaciar();
+    int ObtenerAltura() const;
 
-    void ImprimirAsc() const; // del menor al mayor
-    void ImprimirPorNiveles() const; // se imprime con la estructura del arbol pero bien feo en una sola linea
-    void ImprimirComoArbol() const; // se imprime como si fuera un arbol con saltos de linea
+    void ImprimirAscendente() const;
+    void ImprimirDescendente() const;
+    void ImprimirPorNiveles() const;
 
-
-    // Clase excepcion
-    class ArbolNoMemoria : public std::exception {
+    /**
+     * \brief Descripci&oacute;n de la clase: Excepci&oacute;n lanzada cuando ocurren fallos de memoria din&aacute;mica.
+     */
+    class ArbolAVLNoMemoria : public std::exception {
     public:
-        ArbolNoMemoria() throw();
+        /** \brief Constructor por defecto de la excepci&oacute;n GraficaNoMemoria.
+         */
+        ArbolAVLNoMemoria() throw();
+
+        /** \brief Devuelve una descripci&oacute;n del error cuando no haya memoria disponible.
+         * \return Cadena de caracteres con el mensaje de error.
+         */
         virtual const char *what() const throw();
     };
 
 private:
+
     int numNodos;
 
-    // Estructura de nodo
-    struct Nodo{
+    struct Nodo {
         T valor;
+        int altura;
         Nodo *hijoIzq, *hijoDer;
-        Nodo(T v, Nodo *hIzq = nullptr, Nodo *hDer = nullptr);
 
-    }*raiz;
+        //se inicia con altura 1
+        Nodo(T v, Nodo *hIzq = nullptr, Nodo *hDer = nullptr) : valor(v), altura(1), hijoIzq(hIzq), hijoDer(hDer){}
+    };
 
-    // Funciones de utileria.
-    bool Agregar(T valor, Nodo *& subRaiz);
-    void Eliminar(T valor, Nodo *&subRaiz);
+    Nodo *raiz;
+    int altura(Nodo* n) const;
+    int maximo(int a, int b) const;
+    int factorEquilibrio(Nodo* n) const;
 
-    Nodo*& BuscarDirMayor(Nodo *& subRaiz);
+    // Rotaciones
+    Nodo* rotSimpleIzq(Nodo* n);
+    Nodo* rotSimpleDer(Nodo* n);
+    Nodo* rotDobleIzq(Nodo* n);
+    Nodo* rotDobleDer(Nodo* n);
 
-    void ImprimirInorden(Nodo *subRaiz) const;
+    Nodo* agregarRecursivo(Nodo* subArbol, T valor, bool& seAgrego);
+    Nodo* eliminarRecursivo(Nodo* subArbol, T valor, bool& seElimino);
+    Nodo* nodoMinimo(Nodo* n) const;
+    void vaciarRecursivo(Nodo* subArbol);
+    bool buscarRecursivo(Nodo* subArbol, T valor) const;
 
-    void Podar(Nodo *&subRaiz);
+    void inOrden(Nodo* subArbol) const;
+    void inOrdenInverso(Nodo* subArbol) const;
 
-    void CopiarEnPreorden(Nodo* subRaizOrigen);
+    void copiarPorNiveles(const ArbolAVL& otroArbol);
 };
 
-#include "ArbolBinBusq.tpp"
+#include "ArbolAVL.tpp"
 
-#endif // ARBOLBINBUSQ_HPP
+#endif // ARBOLAVL_HPP_INCLUDED
