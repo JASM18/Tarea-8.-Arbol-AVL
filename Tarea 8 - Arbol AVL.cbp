@@ -32,6 +32,12 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="ArbolAVL.hpp" />
+		<Unit filename="ArbolAVL.tpp" />
+		<Unit filename="CapturaSegura.hpp" />
+		<Unit filename="CapturaSegura.tpp" />
+		<Unit filename="Cola.hpp" />
+		<Unit filename="Cola.tpp" />
 		<Unit filename="main.cpp" />
 		<Extensions />
 	</Project>
